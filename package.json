@@ -1,0 +1,40 @@
+{
+  "name": "NodeMongoDAL",
+  "version": "1.0.0",
+  "description": "Node Mongo REST DAL",
+  "main": "service.js",
+  "scripts": {
+    "test": "node service.js"
+  },
+  "dependencies": {
+    "express": "^4.9.8",
+    "mongoose": "3.8.17",
+    "body-parser": "^1.9.0",
+    "jade": "1.7.0",
+    "iniparser": "1.0.5",
+    "nib": "1.0.4",
+    "stylus": "0.49.2"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/joelsaxton/NodeMongoDAL.git"
+  },
+  "keywords": [
+    "NodeJS",
+    "Mongo",
+    "Express",
+    "Mongoose",
+    "Node",
+    "REST",
+    "data",
+    "access",
+    "layer",
+    "DAL"
+  ],
+  "author": "Joel Saxton",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/joelsaxton/NodeMongoDAL/issues"
+  },
+  "homepage": "https://github.com/joelsaxton/NodeMongoDAL"
+}

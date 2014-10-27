@@ -1,0 +1,27 @@
+extend layout
+block content
+    p
+        | ROUTES:
+
+    table
+        thead
+            tr
+                th LABEL
+                th METHOD
+                th ROUTE
+                th TABLE
+                th QUERY
+                th PARAMS
+        tbody
+            each val in data
+              tr
+                td= val.label
+                td= val.method
+                td= '/' + val.route
+                td= val.table
+                td= val.query
+                td
+                  each param, key in val.params
+                    span #{key} : #{param} <br>
+
+
