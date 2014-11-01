@@ -75,24 +75,40 @@ function startServer(host, db, dbuser, dbpassword, serverport, dbport, configtab
                         // Create Express route
                         app[method]('/' + newData['route'], function (req, res) {
                             var dynamicQueryObj = {};
-
-                            // Set Mongo query object dynamically
+                            var projection = {'_id' : 0};
+                            // Set Mongo query object
                             if (Object.keys(newData['params']).length > 0) {
                                 for (var p in newData['params']) {
-                                    dynamicQueryObj[p] = req.query[p];
+                                    if (req.query[p]){
+                                        if(newData['params'][p] == 'Int'){
+                                            dynamicQueryObj[p] = parseInt(req.query[p]);
+                                        } else {
+                                            dynamicQueryObj[p] = req.query[p];
+                                        }
+                                    }
                                 }
                             }
-                            dynamicCollection[dynamicQuery](dynamicQueryObj).toArray(function (err, data) {
+
+                            // Return 400 Bad Request error if no params provided
+                            if (Object.keys(dynamicQueryObj).length == 0) {
+                                return res.status(400).send({success: false, code: 400, error: "No request parameters provided"});
+                            }
+
+                            // Create query
+                            dynamicCollection[dynamicQuery](dynamicQueryObj, projection).toArray(function (err, data) {
                                 if (!err) {
-                                    return res.status(200).send(data);
+                                    // 200 OK
+                                    return res.status(200).send({success: true, code: 200, count: data.length, results: data});
                                 } else {
+                                    // 500 Internal Server (Mongodb) Error
                                     console.log(err);
-                                    return res.send('ERROR');
+                                    return res.send({success: false, code: 500, error: err});
                                 }
                             });
                         });
                     })();
                 }
+
             } else {
                 console.log(err);
                 process.exit('Unable to get REST API routes from configuration table');
@@ -118,8 +134,6 @@ function startServer(host, db, dbuser, dbpassword, serverport, dbport, configtab
                 }
             });
         });
-
-        //db.close();
     });
 
     // Start server
