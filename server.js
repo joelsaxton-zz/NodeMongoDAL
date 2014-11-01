@@ -4,13 +4,12 @@
 
 var app_root = __dirname,
 express = require('express'),
-mongoose = require('mongoose'),
+mongodb = require('mongodb'),
 bodyParser = require('body-parser'),
 jade = require('jade'),
 iniparser = require('iniparser'),
 stylus = require('stylus'),
 nib = require('nib');
-
 
 // Parse configuration file
 iniparser.parse('./config.ini', function(err,data){
@@ -44,78 +43,83 @@ function startServer(host, db, dbuser, dbpassword, serverport, dbport, configtab
 
     // Database settings
     var connection = 'mongodb://' + dbuser + ':' + dbpassword + '@' + host + ':' + dbport + '/' + db;
-    mongoose.connect(connection);
-    console.log('Connection made to ' + connection);
-
-    // Config collection model
-    var configSchema = new mongoose.Schema({
-        label: String,
-        method: String,
-        route: String,
-        table: String,
-        query: String,
-        params: Object
-    }, { collection: configtable });
-
-    var configModel = mongoose.model('config', configSchema);
-
-    // Get route data and build routes dynamically from config collection
-    configModel.find(function (err, data) {
-        if (!err) {
-            // Process each route in loop from data pulled from config collection
-            for (var route in data) {
-
-                var newData = data[route];
-                console.log('Route found: ' + newData['label']);
-                var newModel = mongoose.model(newData['label'], configSchema);
-                var method = newData['method'];
-                var dynamicQuery = newData['query'];
-
-                app[method]('/' + newData['route'], function (req, res) {
-                    var dynamicQueryObj = {};
-
-                    // Set Mongo query object dynamically
-                    if (Object.keys(newData['params']).length > 0){
-                        for (var p in newData['params']){
-                            dynamicQueryObj[p] = req.query[p];
-                        }
-                    }
-
-                    return newModel[dynamicQuery](dynamicQueryObj, function (err, data) {
-                        if (!err) {
-                            return res.status(200).send(data);
-                        } else {
-                            console.log(err);
-                            return res.send('ERROR');
-                        }
-                    });
-                });
-            }
-        } else {
-            console.log(err);
-            process.exit('Unable to get REST API routes from configuration table');
+    mongodb.connect(connection, function(err, db) {
+        if (err) {
+            console.log('There was an error connecting to MongoDB.');
         }
-        
-    });
+        console.log('Connection made to ' + connection);
+        var configCollection = db.collection(configtable);
 
-    // Read in routes from config collection to display on /admin page
-    app.get('/admin', function (req, res) {
-        return configModel.find(function (err, data) {
+//          Config collection model
+//            label: String,
+//            method: String,
+//            route: String,
+//            table: String,
+//            query: String,
+//            params: Object,
+//            collection: configtable
+
+        // Create all REST API routes from config table
+        configCollection.find({}).toArray(function (err, data) {
             if (!err) {
-                res.render('admin',
-                    { title: 'REST API Admin Panel',
-                      data: data
-                    }
-                );
+                // Process each route in loop from data pulled from config collection
+                for (var route in data) {
+
+                    (function() {
+                        var newData = data[route];
+                        console.log('Route found: ' + newData['label']);
+                        var method = newData['method'];
+                        var dynamicQuery = newData['query'];
+                        var dynamicCollection = db.collection(newData['table']);
+
+                        // Create Express route
+                        app[method]('/' + newData['route'], function (req, res) {
+                            var dynamicQueryObj = {};
+
+                            // Set Mongo query object dynamically
+                            if (Object.keys(newData['params']).length > 0) {
+                                for (var p in newData['params']) {
+                                    dynamicQueryObj[p] = req.query[p];
+                                }
+                            }
+                            dynamicCollection[dynamicQuery](dynamicQueryObj).toArray(function (err, data) {
+                                if (!err) {
+                                    return res.status(200).send(data);
+                                } else {
+                                    console.log(err);
+                                    return res.send('ERROR');
+                                }
+                            });
+                        });
+                    })();
+                }
             } else {
-                console.log('Error rendering the /admin page: ' + err);
-                res.render('error',
-                    { title: 'REST API Admin - Error!',
-                      data: err
-                    }
-                );
+                console.log(err);
+                process.exit('Unable to get REST API routes from configuration table');
             }
         });
+
+        // Create /admin static route and read in all routes from config collection to display on /admin page
+        app.get('/admin', function (req, res) {
+            return configCollection.find({}).toArray(function (err, data) {
+                if (!err) {
+                    res.render('admin',
+                        { title: 'REST API Admin Panel',
+                            data: data
+                        }
+                    );
+                } else {
+                    console.log('Error rendering the /admin page: ' + err);
+                    res.render('error',
+                        { title: 'REST API Admin - Error!',
+                            data: err
+                        }
+                    );
+                }
+            });
+        });
+
+        //db.close();
     });
 
     // Start server
