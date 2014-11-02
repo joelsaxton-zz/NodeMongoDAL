@@ -193,3 +193,48 @@ table tr td {
   min-width: 100px;
   font-size: 10px;
 }
+.title {
+  margin-bottom: 4px;
+}
+#new-route tr {
+  border: 0px;
+  padding: 4px;
+}
+#new-route tr td {
+  border: 0px;
+  min-width: 0px;
+}
+#new-route tr td textarea {
+  font-size: 10px;
+}
+fieldset {
+  border: 1px solid #006400;
+  padding: 6px;
+}
+#submit-form {
+  margin: 4px;
+  text-align: center;
+}
+#submit-route {
+  text-align: center;
+  padding: 5px;
+  font-size: 16px;
+  background-color: #006400;
+  color: #fff;
+  -webkit-border-radius: 8px;
+  border-radius: 8px;
+}
+.update {
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  color: #000;
+  background-color: #ff0;
+  padding: 10px;
+  border: 2px solid #000;
+  font-size: 16px;
+}
+#fail {
+  background-color: #8b0000;
+  color: #fff;
+}
