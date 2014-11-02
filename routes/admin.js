@@ -1,4 +1,4 @@
-module.exports = function(app, configCollection){
+module.exports.loadAdminRoutes = function(app, configCollection, db){
 
 // Create /admin GET route and read in all routes from config collection to display on /admin page
     app.get('/admin', function (req, res) {
@@ -57,13 +57,20 @@ module.exports = function(app, configCollection){
             final[field] = dataType;
         }
         obj.params = final;
+
+        // Insert new route into config table
         configCollection.insert(obj, function(err, data){
             if (!err){
+                var rest = require('./rest');
+                rest.loadRestRoutes(app, configCollection, db);
                 res.redirect('/admin' + '?update=success&route=' + req.body.label);
             } else {
-                console.log('Error posting new route to /admin: ' + err);
+                console.log('Error POSTing new route to /admin: ' + err);
                 res.redirect('/admin' + '?update=failure&route=' + req.body.label);
             }
         })
     });
 }
+
+
+

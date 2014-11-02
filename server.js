@@ -10,7 +10,9 @@ bodyParser = require('body-parser'),
 jade = require('jade'),
 iniparser = require('iniparser'),
 stylus = require('stylus'),
-nib = require('nib');
+nib = require('nib'),
+admin = require('./routes/admin'),
+rest = require('./routes/rest');
 
 // Parse configuration file using Iniparser module
 iniparser.parse('./config.ini', function(err,data){
@@ -30,10 +32,10 @@ iniparser.parse('./config.ini', function(err,data){
 // Connect to database and build all routes
 function startServer(host, db, dbuser, dbpassword, serverport, dbport, configtable) {
 
-    // Create Express server with body parser module
+    // Create Express server with body-parser module
     var app = express();
-    app.use(bodyParser.json());       // to support JSON-encoded bodies
-    app.use(bodyParser.urlencoded({     // to support URL-encoded bodies
+    app.use(bodyParser.json());
+    app.use(bodyParser.urlencoded({
         extended: true
     }));
 
@@ -42,7 +44,7 @@ function startServer(host, db, dbuser, dbpassword, serverport, dbport, configtab
         return stylus(str).set('filename', path).use(nib());
     }
 
-    // Use Jade as view engine
+    // Use Jade as view engine and compile CSS with Stylus/Nib
     app.set('views', app_root + '/views');
     app.set('view engine', 'jade');
     app.use(stylus.middleware({ src: app_root + '/public', compile: compile}));
@@ -61,23 +63,9 @@ function startServer(host, db, dbuser, dbpassword, serverport, dbport, configtab
         // Initialize connection to config table
         var configCollection = db.collection(configtable);
 
-        /**
-         * CONFIGURATION COLLECTION SCHEMA
-            label: String,
-            method: String,
-            route: String,
-            table: String,
-            query: String,
-            params: Object,
-            collection: configtable
-        */
-
-        // Register Administration Console Routes
-        require('./routes/admin')(app, configCollection);
-
-        // Register REST API routes from config table
-        require('./routes/rest')(app, configCollection, db);
-
+        // Register Administration Console Routes and REST API routes
+        admin.loadAdminRoutes(app, configCollection, db);
+        rest.loadRestRoutes(app, configCollection, db);
     });
 
     // Start server
@@ -85,3 +73,15 @@ function startServer(host, db, dbuser, dbpassword, serverport, dbport, configtab
         console.log('Express server on http://localhost:%d in %s mode\nCTRL + C to shutdown', serverport, app.settings.env);
     });
 }
+
+
+/*
+ CONFIGURATION COLLECTION SCHEMA
+ label: String,
+ method: String,
+ route: String,
+ table: String,
+ query: String,
+ params: Object,
+ collection: configtable
+*/

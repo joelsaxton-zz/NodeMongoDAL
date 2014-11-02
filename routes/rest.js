@@ -1,4 +1,4 @@
-module.exports = function(app, configCollection, db) {
+module.exports.loadRestRoutes = function(app, configCollection, db) {
 
 // Load REST API routes from config table and create Express routes
     configCollection.find({}).toArray(function (err, data) {
