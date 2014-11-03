@@ -15,7 +15,7 @@ module.exports.loadRestRoutes = function(app, configCollection, db) {
                     // Create Express route
                     app[method]('/' + newData['route'], function (req, res) {
                         var dynamicQueryObj = {};
-                        var projection = {'_id': 0};
+                        var queryOption = {}; // Empty for a GET or POST, must be used in a PUT to $SET updated fields
                         // Set Mongo query object
                         if (Object.keys(newData['params']).length > 0) {
                             for (var p in newData['params']) {
@@ -35,7 +35,7 @@ module.exports.loadRestRoutes = function(app, configCollection, db) {
                         }
 
                         // Create query
-                        dynamicCollection[dynamicQuery](dynamicQueryObj, projection).toArray(function (err, data) {
+                        dynamicCollection[dynamicQuery](dynamicQueryObj, queryOption).toArray(function (err, data) {
                             if (!err) {
                                 // 200 OK
                                 return res.status(200).send({success: true, code: 200, count: data.length, results: data});
