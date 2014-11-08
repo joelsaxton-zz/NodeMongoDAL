@@ -4,8 +4,6 @@ NodeMongoDAL
 REST based data access layer with NodeJS and MongoDB
 
 
-WORK IN PROGRESS - SEVERAL BUGS REMAIN 
-
 Copyright (C) 2014 Joel Saxton
 
 This program is free software: you can redistribute it and/or modify
