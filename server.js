@@ -26,14 +26,15 @@ iniparser.parse('./config.ini', function(err,data){
     dbuser = data.dbuser,
     dbpassword = data.dbpassword,
     idroutes = data.idroutes,
-    requireauth = data.requireauth;
+    requireauth = data.requireauth,
+    authtable = data.authtable;
 
     console.log('Config.ini loaded. Host: %s:%d , Database: %s:%d , Config table: %s', host, serverport, db, dbport, configtable);
-    startServer(host, db, dbuser, dbpassword, serverport, dbport, configtable, idroutes, requireauth, objectid);
+    startServer(host, db, dbuser, dbpassword, serverport, dbport, configtable, idroutes, requireauth, authtable, objectid);
 });
 
 // Connect to database and build all routes
-function startServer(host, db, dbuser, dbpassword, serverport, dbport, configtable, idroutes, requireauth, objectid) {
+function startServer(host, db, dbuser, dbpassword, serverport, dbport, configtable, idroutes, requireauth, authtable, objectid) {
 
     // Create Express server with body-parser module
     var app = express();
@@ -65,6 +66,13 @@ function startServer(host, db, dbuser, dbpassword, serverport, dbport, configtab
 
         // Initialize connection to config table
         var configCollection = database.collection(configtable);
+
+        // If authentication is required, use auth middleware
+        if (requireauth) {
+            var restAuth = require('./helpers/restAuth');
+            restAuth.createAccessTokenRoute(app, database, authtable);
+            app.use(restAuth.checkAuth(database, authtable));
+        }
 
         // Register Administration Console Routes and REST API routes
         admin.loadAdminRoutes(app, configCollection, database);

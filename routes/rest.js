@@ -1,16 +1,16 @@
-module.exports.loadRestRoutes = function(app, configCollection, db, configtable, idroutes, requireauth, objectid) {
+module.exports.loadRestRoutes = function(app, configCollection, db, configtable, idroutes, objectid) {
 
     // Load basic (non-custom) _id based routes if idroute params is true
-    loadBasicIdRoutes(app, db, configtable, idroutes, requireauth, objectid);
+    loadBasicIdRoutes(app, db, configtable, idroutes, objectid);
 
     // Load administrator defined dynamic routes
-    loadAdminDefinedRoutes(app, configCollection, db, requireauth);
+    loadAdminDefinedRoutes(app, configCollection, db);
 
 }
 
 
 // Create basic _id GET, POST, PUT routes @todo - DELETE routes
-function loadBasicIdRoutes(app, db, configtable, idroutes, requireauth, objectid){
+function loadBasicIdRoutes(app, db, configtable, idroutes, objectid){
     // If option enabled create _id routes
     if (idroutes){
         console.log('Configuration value "idroutes" set to true, default routes will be loaded');
@@ -45,7 +45,7 @@ function loadBasicIdRoutes(app, db, configtable, idroutes, requireauth, objectid
                         } else {
                             // 500 Internal Server (Mongodb) Error
                             console.log(err);
-                            return res.send({success: false, code: 500, error: "Internal Server Error"});
+                            return res.status(500).send({success: false, code: 500, error: "Internal Server Error"});
                         }
                     });
                 });
@@ -76,7 +76,7 @@ function loadBasicIdRoutes(app, db, configtable, idroutes, requireauth, objectid
                         } else {
                             // 500 Internal Server (Mongodb) Error
                             console.log(err);
-                            return res.send({success: false, code: 500, error: "Internal Server Error"});
+                            return res.status(500).send({success: false, code: 500, error: "Internal Server Error"});
                         }
                     });
                 });
@@ -115,7 +115,7 @@ function loadBasicIdRoutes(app, db, configtable, idroutes, requireauth, objectid
                         } else {
                             // 500 Internal Server (Mongodb) Error
                             console.log(err);
-                            return res.send({success: false, code: 500, error: "Internal Server Error"});
+                            return res.status(500).send({success: false, code: 500, error: "Internal Server Error"});
                         }
                     });
                 });
@@ -128,7 +128,7 @@ function loadBasicIdRoutes(app, db, configtable, idroutes, requireauth, objectid
 
 
 // Load admin-defined REST API routes from config table and create Express routes
-function loadAdminDefinedRoutes(app, configCollection, db, requireauth){
+function loadAdminDefinedRoutes(app, configCollection, db){
     configCollection.find({}).toArray(function (err, data) {
         if (!err) {
             // Process each route with data pulled from config collection
@@ -171,7 +171,7 @@ function loadAdminDefinedRoutes(app, configCollection, db, requireauth){
                             } else {
                                 // 500 Internal Server (Mongodb) Error
                                 console.log(err);
-                                return res.send({success: false, code: 500, error: "Internal Server Error"});
+                                return res.status(500).send({success: false, code: 500, error: "Internal Server Error"});
                             }
                         });
                     });

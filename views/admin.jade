@@ -8,7 +8,7 @@ block content
         div(class='update' id='fail') FAILED TO ADD ROUTE '#{route}'
 
     p
-        | ROUTES:
+        | CUSTOM ROUTES:
     each item, index in data
         if data[index] != ''
             div(class='title')= index
@@ -36,7 +36,7 @@ block content
             br
 
     p
-        | ADD NEW ROUTE:
+        | ADD NEW CUSTOM ROUTE:
 
     form(method='post', id='new-route-form', action='')
         fieldset
