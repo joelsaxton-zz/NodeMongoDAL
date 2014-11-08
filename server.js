@@ -6,6 +6,7 @@
 var app_root = __dirname,
 express = require('express'),
 mongodb = require('mongodb'),
+objectid = mongodb.ObjectID,
 bodyParser = require('body-parser'),
 jade = require('jade'),
 iniparser = require('iniparser'),
@@ -17,20 +18,22 @@ rest = require('./routes/rest');
 // Parse configuration file using Iniparser module
 iniparser.parse('./config.ini', function(err,data){
     if (err){ console.log("An error occurred parsing the config.ini file");}
-    var host = data.host;
-    var db = data.database;
-    var configtable = data.configtable;
-    var serverport = data.serverport;
-    var dbport = data.dbport;
-    var dbuser = data.dbuser;
-    var dbpassword = data.dbpassword;
+    var host = data.host,
+    db = data.database,
+    configtable = data.configtable,
+    serverport = data.serverport,
+    dbport = data.dbport,
+    dbuser = data.dbuser,
+    dbpassword = data.dbpassword,
+    idroutes = data.idroutes,
+    requireauth = data.requireauth;
 
     console.log('Config.ini loaded. Host: %s:%d , Database: %s:%d , Config table: %s', host, serverport, db, dbport, configtable);
-    startServer(host, db, dbuser, dbpassword, serverport, dbport, configtable);
+    startServer(host, db, dbuser, dbpassword, serverport, dbport, configtable, idroutes, requireauth, objectid);
 });
 
 // Connect to database and build all routes
-function startServer(host, db, dbuser, dbpassword, serverport, dbport, configtable) {
+function startServer(host, db, dbuser, dbpassword, serverport, dbport, configtable, idroutes, requireauth, objectid) {
 
     // Create Express server with body-parser module
     var app = express();
@@ -54,18 +57,18 @@ function startServer(host, db, dbuser, dbpassword, serverport, dbport, configtab
     var connection = 'mongodb://' + dbuser + ':' + dbpassword + '@' + host + ':' + dbport + '/' + db;
 
     // Connect to Database and start REST API Server
-    mongodb.connect(connection, function(err, db) {
+    mongodb.connect(connection, function(err, database) {
         if (err) {
             console.log('There was an error connecting to MongoDB.');
         }
         console.log('Connection made to ' + connection);
 
         // Initialize connection to config table
-        var configCollection = db.collection(configtable);
+        var configCollection = database.collection(configtable);
 
         // Register Administration Console Routes and REST API routes
-        admin.loadAdminRoutes(app, configCollection, db);
-        rest.loadRestRoutes(app, configCollection, db);
+        admin.loadAdminRoutes(app, configCollection, database);
+        rest.loadRestRoutes(app, configCollection, database, configtable, idroutes, requireauth, objectid);
     });
 
     // Start server
@@ -73,7 +76,6 @@ function startServer(host, db, dbuser, dbpassword, serverport, dbport, configtab
         console.log('Express server on http://localhost:%d in %s mode\nCTRL + C to shutdown', serverport, app.settings.env);
     });
 }
-
 
 /*
  CONFIGURATION COLLECTION SCHEMA
