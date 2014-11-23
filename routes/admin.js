@@ -1,30 +1,55 @@
-module.exports.loadAdminRoutes = function(app, configCollection, db){
+module.exports.loadAdminRoutes = function(app, configCollection, db, idroutes, configtable){
 
 // Create /admin GET route and read in all routes from config collection to display on /admin page
     app.get('/admin', function (req, res) {
         configCollection.find({}).toArray(function (err, data) {
             if (!err) {
-                var tableData = {'get' : [], 'put' : [], 'post' : []};
+                var tableData = {'userdefined' : {'get' : [], 'put' : [], 'post' : []} , 'auto' : []};
                 for (var route in data){
                     switch (data[route].method){
                         case 'get':
-                            tableData.get.push(data[route]);
+                            tableData.userdefined.get.push(data[route]);
                             break;
                         case 'put':
-                            tableData.put.push(data[route]);
+                            tableData.userdefined.put.push(data[route]);
                             break;
                         case 'post':
-                            tableData.post.push(data[route]);
+                            tableData.userdefined.post.push(data[route]);
                             break;
                     }
                 }
-                res.render('admin',
-                    { title: 'REST API Admin Panel',
-                        data: tableData,
-                        update: req.query.update,
-                        route: req.query.route
-                    }
-                );
+
+                // Render automatic _id routes if idroutes = 'true'
+                if (idroutes.toLowerCase() == 'true'){
+                    // Get list of collections for _id GET/PUT/POST routes
+                    db.collectionNames(function(err, names) {
+                        for (var name in names) {
+                            var coll = names[name].name.split('.')[1];
+                            if (coll != 'restauth' && coll != 'system' && coll != configtable) {
+                                tableData.auto.push(coll);
+                            }
+                        }
+                        console.log(tableData);
+                        res.render('admin',
+                            { title: 'REST API Admin Panel',
+                                data: tableData,
+                                idroutes: true,
+                                update: req.query.update,
+                                route: req.query.route
+                            }
+                        );
+                    });
+                } else {
+                    res.render('admin',
+                        { title: 'REST API Admin Panel',
+                            data: tableData,
+                            idroutes: false,
+                            update: req.query.update,
+                            route: req.query.route
+                        }
+                    );
+                }
+
             } else {
                 console.log('Error rendering the /admin page: ' + err);
                 res.render('error',

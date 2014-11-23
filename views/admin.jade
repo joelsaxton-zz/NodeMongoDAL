@@ -8,9 +8,9 @@ block content
         div(class='update' id='fail') FAILED TO ADD ROUTE '#{route}'
 
     p
-        | CUSTOM ROUTES:
-    each item, index in data
-        if data[index] != ''
+        | ADMIN DEFINED ROUTES:
+    each item, index in data.userdefined
+        if data.userdefined[index] != ''
             div(class='title')= index
             table(class='route-lists')
                 thead
@@ -34,42 +34,63 @@ block content
                             span #{key} : #{param} <br>
             br
             br
+            br
+            br
 
     p
-        | ADD NEW CUSTOM ROUTE:
+        | AUTO _ID ROUTES:
+    if data.idroutes = 'true'
+        div(class='title')= autoroutes
+        table(class='route-lists')
+            thead
+                tr
+                    th LABEL
+                    th ROUTE
+            tbody
+            each item in data.auto
+                tr
+                    td= item
+                    td= 'GET /' + item + '/:id  PUT /' + item + '/:id  POST /' + item
+    br
+    br
 
-    form(method='post', id='new-route-form', action='')
-        fieldset
-            table(id='new-route')
-                tr
-                    td LABEL
-                    td
-                        input(type='text', name='label' placeholder='label')
-                tr
-                    td METHOD
-                    td
-                        select(name='method')
-                            option(name='get', value='get', selected='selected') GET
-                            option(name='put', value='put') PUT
-                            option(name='post', value='post') POST
-                tr
-                    td ROUTE
-                    td
-                        input(type='text', name='route' placeholder='route')
-                tr
-                    td TABLE
-                    td
-                        input(type='text', name='table' placeholder='table (collection)')
-                tr
-                    td QUERY
-                    td
-                        select(name='query')
-                            option(name='find', value='find', selected='selected') FIND
-                            option(name='update', value='update') UPDATE
-                            option(name='insert', value='insert') INSERT
-                tr
-                    td PARAMS
-                    td
-                        textarea(name='params', form='new-route-form', placeholder='Usage: (get(find) - searchable params, put(update) - updatable fields, post(insert) - all fields)  DataTypes: Int, String  Syntax: field:dataType, field:dataType' style='height:100px; width:200px')
-            div(id='submit-form')
-                input(type='submit' id='submit-route')
+
+
+    p
+            | ADD NEW CUSTOM ROUTE:
+
+        form(method='post', id='new-route-form', action='')
+            fieldset
+                table(id='new-route')
+                    tr
+                        td LABEL
+                        td
+                            input(type='text', name='label' placeholder='label')
+                    tr
+                        td METHOD
+                        td
+                            select(name='method')
+                                option(name='get', value='get', selected='selected') GET
+                                option(name='put', value='put') PUT
+                                option(name='post', value='post') POST
+                    tr
+                        td ROUTE
+                        td
+                            input(type='text', name='route' placeholder='route')
+                    tr
+                        td TABLE
+                        td
+                            input(type='text', name='table' placeholder='table (collection)')
+                    tr
+                        td QUERY
+                        td
+                            select(name='query')
+                                option(name='find', value='find', selected='selected') FIND
+                                option(name='update', value='update') UPDATE
+                                option(name='insert', value='insert') INSERT
+                    tr
+                        td PARAMS
+                        td
+                            textarea(name='params', form='new-route-form', placeholder='Usage: (get(find) - searchable params, put(update) - updatable fields, post(insert) - all fields)  DataTypes: Int, String  Syntax: field:dataType, field:dataType' style='height:100px; width:200px')
+                div(id='submit-form')
+                    input(type='submit' id='submit-route')

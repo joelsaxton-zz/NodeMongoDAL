@@ -1,7 +1,7 @@
-module.exports.loadRestRoutes = function(app, configCollection, db, configtable, idroutes, objectid) {
+module.exports.loadRestRoutes = function(app, configCollection, db, configtable, idroutes) {
 
     // Load basic (non-custom) _id based routes if idroute params is true
-    loadBasicIdRoutes(app, db, configtable, idroutes, objectid);
+    loadBasicIdRoutes(app, db, configtable, idroutes);
 
     // Load administrator defined dynamic routes
     loadAdminDefinedRoutes(app, configCollection, db);
@@ -10,115 +10,139 @@ module.exports.loadRestRoutes = function(app, configCollection, db, configtable,
 
 
 // Create basic _id GET, POST, PUT routes @todo - DELETE routes
-function loadBasicIdRoutes(app, db, configtable, idroutes, objectid){
+function loadBasicIdRoutes(app, db, configtable, idroutes){
+    var ObjectId = require('mongodb').ObjectID;
     // If option enabled create _id routes
-    if (idroutes){
+    if (idroutes.toLowerCase() == 'true'){
         console.log('Configuration value "idroutes" set to true, default routes will be loaded');
         // Get list of collections for _id GET/PUT routes
         db.collectionNames(function(err, names){
             var collections = [];
             for (var name in names){
                 var coll = names[name].name.split('.')[1];
-                if (coll != 'system' && coll != configtable){
+                if (coll != 'restauth' && coll != 'system' && coll != configtable){
                     collections.push(coll);
                 }
             }
-            for (var route in collections){
-                // Set vars
-                var collection = db.collection(collections[route]);
+            for (var route in collections) {
+                (function () {
+                    // Set vars
+                    var collection = db.collection(collections[route]);
+                    // Create Express GET route
+                    app.get('/' + collections[route] + '/:id', function (req, res) {
+                        // Return 400 Bad Request error if no params provided
+                        if (typeof req.params.id == 'undefined') {
+                            return res.status(400).send({
+                                success: false,
+                                code: 400,
+                                error: "No _id parameter provided"
+                            });
+                        }
 
-                // Create Express GET route
-                app.get('/' + collections[route] + '/:id', function (req, res) {
-                    // Return 400 Bad Request error if no params provided
-                    if (typeof req.params.id == 'undefined') {
-                        return res.status(400).send({success: false, code: 400, error: "No _id parameter provided"});
-                    } else {
+                        // Create GET _id query
+                        collection.find({_id: new ObjectId(req.params.id)}).toArray(function (err, data) {
+                            if (!err) {
+                                // 200 OK
+                                return res.status(200).send({
+                                    success: true,
+                                    code: 200,
+                                    count: data.length,
+                                    results: data[0]
+                                });
+                            } else {
+                                // 500 Internal Server (Mongodb) Error
+                                console.log(err);
+                                return res.status(500).send({
+                                    success: false,
+                                    code: 500,
+                                    error: "Internal Server Error"
+                                });
+                            }
+                        });
+                    });
+
+                    // Create Express POST route
+                    app.post('/' + collections[route], function (req, res) {
+                        var dynamicQueryObj = {};
+                        // Set Mongo query object
+                        if (Object.keys(req.query).length > 0) {
+                            for (var p in req.query) {
+                                if (temp = req.query[p]) {
+                                    if (!isNaN(temp + 0)) {
+                                        dynamicQueryObj[p] = parseInt(req.query[p]);
+                                    } else {
+                                        dynamicQueryObj[p] = req.query[p];
+                                    }
+                                }
+                            }
+                        } else {
+                            return res.status(400).send({success: false, code: 400, error: "No POST fields provided"});
+                        }
+
+                        // Create POST (insert) query
+                        collection.insert(dynamicQueryObj, function (err, data) {
+                            if (!err) {
+                                // 200 OK
+                                return res.status(200).send({success: true, code: 200, results: data});
+                            } else {
+                                // 500 Internal Server (Mongodb) Error
+                                console.log(err);
+                                return res.status(500).send({
+                                    success: false,
+                                    code: 500,
+                                    error: "Internal Server Error"
+                                });
+                            }
+                        });
+                    });
+
+                    // Create Express PUT route
+                    app.put('/' + collections[route] + '/:id', function (req, res) {
+                        // Return 400 Bad Request error if no params provided
+                        if (typeof req.params.id == 'undefined' || Object.keys(req.query).length == 0) {
+                            return res.status(400).send({
+                                success: false,
+                                code: 400,
+                                error: "No _id or request parameters provided"
+                            });
+                        }
+                        var dynamicQueryObj = {};
+                        // Set Mongo query object
+                        if (Object.keys(req.query).length > 0) {
+                            for (var p in req.query) {
+                                if (temp = req.query[p]) {
+                                    if (!isNaN(temp + 0)) {
+                                        dynamicQueryObj[p] = parseInt(req.query[p]);
+                                    } else {
+                                        dynamicQueryObj[p] = req.query[p];
+                                    }
+                                }
+                            }
+                        }
+
                         var query = {};
+                        var setFields = {};
                         query._id = objectid(req.params.id);
-                    }
+                        setFields.$set = dynamicQueryObj;
+                        console.log(setFields);
 
-                    // Create GET _id query
-                    collection.find(query).toArray(function (err, data) {
-                        if (!err) {
-                            // 200 OK
-                            return res.status(200).send({success: true, code: 200, count: data.length, results: data});
-                        } else {
-                            // 500 Internal Server (Mongodb) Error
-                            console.log(err);
-                            return res.status(500).send({success: false, code: 500, error: "Internal Server Error"});
-                        }
-                    });
-                });
-
-                // Create Express POST route
-                app.post('/' + collections[route], function (req, res) {
-                    var dynamicQueryObj = {};
-                    // Set Mongo query object
-                    if (Object.keys(req.query).length > 0) {
-                        for (var p in req.query) {
-                            if (temp = req.query[p]) {
-                                if (!isNaN(temp + 0)) {
-                                    dynamicQueryObj[p] = parseInt(req.query[p]);
-                                } else {
-                                    dynamicQueryObj[p] = req.query[p];
-                                }
+                        // Create PUT _id query
+                        collection.update(query, setFields, function (err, data) {
+                            if (!err) {
+                                // 200 OK
+                                return res.status(200).send({success: true, code: 200, results: data});
+                            } else {
+                                // 500 Internal Server (Mongodb) Error
+                                console.log(err);
+                                return res.status(500).send({
+                                    success: false,
+                                    code: 500,
+                                    error: "Internal Server Error"
+                                });
                             }
-                        }
-                    } else {
-                        return res.status(400).send({success: false, code: 400, error: "No POST fields provided"});
-                    }
-
-                    // Create POST (insert) query
-                    collection.insert(dynamicQueryObj, function (err, data) {
-                        if (!err) {
-                            // 200 OK
-                            return res.status(200).send({success: true, code: 200, results: data});
-                        } else {
-                            // 500 Internal Server (Mongodb) Error
-                            console.log(err);
-                            return res.status(500).send({success: false, code: 500, error: "Internal Server Error"});
-                        }
+                        });
                     });
-                });
-
-                // Create Express PUT route
-                app.put('/' + collections[route] + '/:id', function (req, res) {
-                    // Return 400 Bad Request error if no params provided
-                    if (typeof req.params.id == 'undefined' || Object.keys(req.query).length == 0) {
-                        return res.status(400).send({success: false, code: 400, error: "No _id or request parameters provided"});
-                    }
-                    var dynamicQueryObj = {};
-                    // Set Mongo query object
-                    if (Object.keys(req.query).length > 0) {
-                        for (var p in req.query) {
-                            if (temp = req.query[p]) {
-                                if (!isNaN(temp + 0)) {
-                                    dynamicQueryObj[p] = parseInt(req.query[p]);
-                                } else {
-                                    dynamicQueryObj[p] = req.query[p];
-                                }
-                            }
-                        }
-                    }
-
-                    var query = {};
-                    var setFields = {};
-                    query._id = objectid(req.params.id);
-                    setFields.$set = dynamicQueryObj;
-                    console.log(setFields);
-
-                    // Create PUT _id query
-                    collection.update(query, setFields, function (err, data) {
-                        if (!err) {
-                            // 200 OK
-                            return res.status(200).send({success: true, code: 200, results: data});
-                        } else {
-                            // 500 Internal Server (Mongodb) Error
-                            console.log(err);
-                            return res.status(500).send({success: false, code: 500, error: "Internal Server Error"});
-                        }
-                    });
-                });
+                })();
             }
         });
     } else {
@@ -135,7 +159,7 @@ function loadAdminDefinedRoutes(app, configCollection, db){
             for (var route in data) {
                 (function () {
                     var newData = data[route];
-                    console.log('Route found: ' + newData['label']);
+                    console.log('Admin-defined route found: ' + newData['label']);
                     var method = newData['method'];
                     var dynamicQuery = newData['query'];
                     var dynamicCollection = db.collection(newData['table']);

@@ -30,11 +30,11 @@ iniparser.parse('./config.ini', function(err,data){
     authtable = data.authtable;
 
     console.log('Config.ini loaded. Host: %s:%d , Database: %s:%d , Config table: %s', host, serverport, db, dbport, configtable);
-    startServer(host, db, dbuser, dbpassword, serverport, dbport, configtable, idroutes, requireauth, authtable, objectid);
+    startServer(host, db, dbuser, dbpassword, serverport, dbport, configtable, idroutes, requireauth, authtable);
 });
 
 // Connect to database and build all routes
-function startServer(host, db, dbuser, dbpassword, serverport, dbport, configtable, idroutes, requireauth, authtable, objectid) {
+function startServer(host, db, dbuser, dbpassword, serverport, dbport, configtable, idroutes, requireauth, authtable) {
 
     // Create Express server with body-parser module
     var app = express();
@@ -68,15 +68,16 @@ function startServer(host, db, dbuser, dbpassword, serverport, dbport, configtab
         var configCollection = database.collection(configtable);
 
         // If authentication is required, use auth middleware
-        if (requireauth) {
+        if (requireauth.toLowerCase() == 'true') {
+            console.log("auth required");
             var restAuth = require('./helpers/restAuth');
             restAuth.createAccessTokenRoute(app, database, authtable);
             app.use(restAuth.checkAuth(database, authtable));
         }
 
         // Register Administration Console Routes and REST API routes
-        admin.loadAdminRoutes(app, configCollection, database);
-        rest.loadRestRoutes(app, configCollection, database, configtable, idroutes, requireauth, objectid);
+        admin.loadAdminRoutes(app, configCollection, database, idroutes, configtable);
+        rest.loadRestRoutes(app, configCollection, database, configtable, idroutes, requireauth);
     });
 
     // Start server
